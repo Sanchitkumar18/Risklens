@@ -52,6 +52,9 @@ run: ## Run the API locally with autoreload
 dashboard: ## Run the Streamlit dashboard (API must be running)
 	$(BIN)/streamlit run dashboard/app.py
 
+demo: ## Run the full end-to-end demo (self-contained, prints every step)
+	$(BIN)/python -m scripts.run_demo
+
 compose-up: ## Start postgres + api via docker compose
 	docker compose up --build
 

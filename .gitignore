@@ -35,6 +35,9 @@ data/processed/*.parquet
 data/sample/*.csv
 !data/**/.gitkeep
 
+# ── Local SQLite (demo / scratch) ───────────────────────────
+*.db
+
 # ── IDE ─────────────────────────────────────────────────────
 .idea/
 .vscode/

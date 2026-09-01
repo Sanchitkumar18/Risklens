@@ -75,6 +75,23 @@ def test_alerts_question(db_session, portfolio_id):
 
 
 @pytest.mark.integration
+@pytest.mark.parametrize(
+    "question,intent,tool",
+    [
+        ("Show my asset exposure and weights.", "exposure", "get_asset_exposure"),
+        ("How correlated are my holdings?", "correlation", "get_correlation_matrix"),
+        ("What caused the largest drawdown?", "drawdown", "get_drawdown_analysis"),
+        ("Which assets have unusual movements?", "anomalies", "get_anomalies"),
+    ],
+)
+def test_remaining_intents(db_session, portfolio_id, question, intent, tool):
+    resp = _ask(db_session, portfolio_id, question)
+    assert resp.intent == intent
+    assert tool in resp.tools_used
+    assert resp.answer
+
+
+@pytest.mark.integration
 def test_empty_portfolio_degrades_gracefully(db_session):
     ps = PortfolioService(db_session)
     pf = ps.create_portfolio(PortfolioCreate(name="Empty"))

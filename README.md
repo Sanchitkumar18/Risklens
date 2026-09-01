@@ -43,7 +43,30 @@ Implemented incrementally.
 * **Phase 10:** FastAPI REST API — 23 endpoints across market data, portfolios, risk, correlation, stress, anomalies, and alerts, with Pydantic validation, a uniform error envelope, and OpenAPI docs at `/docs`.
 * **Phase 11:** Streamlit dashboard — Overview, Portfolio, Risk Analytics, Stress Testing, Anomalies, Alerts, and an AI Assistant chat shell, with Plotly visualizations, talking to the API over HTTP.
 * **Phase 12:** LangChain tools — nine grounded tools (`get_portfolio_summary`, `get_risk_metrics`, `get_risk_contributions`, `run_stress_test`, `get_correlation_matrix`, `get_drawdown_analysis`, `get_asset_exposure`, `get_anomalies`, `get_alerts`) wrapping the services, plus an LLM provider abstraction that runs a deterministic mock with no API key. The LLM can only report numbers a tool returns.
-* **Phase 13 (current):** LangGraph assistant — a typed-state graph (classify → plan → retrieve → explain → validate) that answers grounded questions via `POST /assistant/query` and the dashboard chat. Works offline (deterministic renderer) or with a real LLM; a validation node flags any ungrounded figure.
+* **Phase 13:** LangGraph assistant — a typed-state graph (classify → plan → retrieve → explain → validate) that answers grounded questions via `POST /assistant/query` and the dashboard chat. Works offline (deterministic renderer) or with a real LLM; a validation node flags any ungrounded figure.
+* **Phase 14:** testing & hardening — **197 tests at 97% coverage**, including a consolidated end-to-end demo test and cross-layer consistency checks.
+* **Phase 15:** Dockerization + docs — `docker compose up --build` starts postgres + API + dashboard (wait-for-DB, auto-migrate, optional demo seed); design docs in [`docs/`](docs/).
+* **Phase 16:** end-to-end demo runner (`make demo`) + [interview guide](docs/interview-guide.md). **Project complete.**
+
+## Documentation
+
+- [Architecture](docs/architecture.md) — layers, decisions, scalability, failure modes
+- [Database design](docs/database-design.md) — schema, constraints, rationale
+- [Risk methodology](docs/risk-methodology.md) — every metric: definition, formula, test
+- [GenAI design](docs/genai-design.md) — LangGraph, tools, grounding, safety
+
+### Testing
+
+```bash
+make test                                  # 197 tests
+.venv/bin/pytest --cov=app --cov-report=term-missing   # coverage
+make test-unit / make test-integration     # by marker
+```
+
+Unit tests pin the risk math against hand-computed values (VaR, volatility, drawdown,
+the Euler risk-contribution identity, stress P&L) and the assistant's grounding
+validator; integration tests cover the database, every API endpoint, the pipelines, and
+a full **end-to-end demo** that asserts the assistant's VaR equals the risk engine's.
 
 ### Dashboard
 
@@ -126,6 +149,19 @@ make test
 make run
 ```
 
+### One-command demo
+
+See the entire pipeline run and print every step (self-contained — uses a local SQLite
+file, no Postgres needed):
+
+```bash
+make demo
+```
+
+It loads ~11k synthetic bars, builds the Tech Growth portfolio, computes risk, detects
+anomalies, raises alerts, runs a stress scenario, and prints the grounded AI assistant
+answering five questions.
+
 Then check the health endpoint:
 
 ```bash
@@ -138,15 +174,22 @@ Expected:
 {"status": "ok", "app": "RiskLens", "environment": "development", "version": "0.1.0"}
 ```
 
-## Docker (Phase 1)
+## Docker
 
-Brings up PostgreSQL + the API (the API does not yet use the DB — that lands in the
-persistence phase):
+One command brings up **PostgreSQL + API + dashboard**. The API entrypoint waits for
+the database, applies migrations, and (with `SEED_ON_START=true`) loads synthetic data
+and a demo **Tech Growth** portfolio on first boot:
 
 ```bash
-cp .env.example .env
 docker compose up --build
 ```
+
+- API + docs: http://localhost:8000/docs
+- Dashboard: http://localhost:8501
+
+Runs with **no API key** (mock assistant). To use a real model, set `LLM_PROVIDER=openai`
+and `OPENAI_API_KEY` in the `api` service environment. Migrations can also be run
+manually inside the container: `docker compose exec api alembic upgrade head`.
 
 ## Configuration
 
@@ -156,6 +199,68 @@ The application runs **without an LLM API key** by keeping `LLM_PROVIDER=mock`.
 ## Running tests
 
 ```bash
-make test          # everything
+make test          # everything (197 tests)
 make test-unit     # fast unit tests only
 ```
+
+---
+
+## Sample portfolio (the demo)
+
+**Tech Growth** — AAPL 100 · MSFT 80 · NVDA 50 · AMZN 60 · GOOGL 40. On the seeded
+dataset this values at **$184,657** with headline risk:
+
+| Metric | Value |
+|---|---|
+| Annualized volatility | 21.2% |
+| 95% / 99% 1-day VaR | $3,731 / $5,715 |
+| Max drawdown | −37.3% (2022-10-05 → 2024-01-09) |
+| Top risk contributor | **NVDA — 39.3% weight → 55.5% of risk** |
+| 25% tech-selloff loss | −$46,164 (−25.0%) |
+
+## Example assistant queries (grounded, real output)
+
+> **Q:** Explain my 99% VaR in simple terms.
+> **A:** The 99% 1-day historical VaR is 3.09% (~$5,715 of a $184,657 portfolio)…
+> a one-day loss greater than about $5,715 occurred in roughly 1% of days. It is not a
+> maximum… parametric estimate is $5,585; it can understate risk when returns have fat
+> tails. *Not financial advice.*
+
+> **Q:** Which asset contributes most to portfolio risk?
+> **A:** The largest driver is NVDA, contributing **55.5%** of total portfolio volatility
+> (weight 39.3%)… risk contribution accounts for correlations, so a volatile, highly
+> weighted name can contribute more risk than its weight alone suggests.
+
+Every number in every answer originates from the analytical engine — the assistant
+cannot fabricate a metric (see [GenAI design](docs/genai-design.md)).
+
+## Limitations
+
+- **Synthetic data** only (clearly labeled) — realistic characteristics, not real prices.
+- `adjusted_close == close` (no dividends/splits modeled).
+- VaR/volatility assume i.i.d.-ish returns (√time scaling); no VaR backtest yet.
+- Fixed-contamination anomaly detection flags ~that fraction of observations.
+- "Why did risk *change*?" is answered as current drivers; a true snapshot diff over the
+  append-only `risk_metrics` history is a designed-in future feature.
+
+## Future improvements
+
+- VaR backtesting (Kupiec POF + Christoffersen independence) surfaced in the UI.
+- Real dividend/split-adjusted data ingestion.
+- Background workers for large ingestion + heavy risk compute; Redis cache.
+- Real-time risk via streaming prices + EWMA covariance + WebSockets.
+- API authentication/authorization + rate limiting.
+- Snapshot-diff explanations ("risk rose because …").
+
+## Disclaimer
+
+RiskLens is a portfolio/research/demo project on **synthetic data**. It is **not financial
+advice** and must not be used for real trading or investment decisions. VaR is a
+statistical estimate, not a guarantee of maximum loss.
+
+## Interview guide
+
+See [`docs/interview-guide.md`](docs/interview-guide.md) for defensible answers to the
+questions this project invites (Why FastAPI/PostgreSQL/historical VaR/Isolation Forest/
+LangGraph, how VaR works, backtesting, preventing hallucinations, scaling, AWS deployment,
+and what I'd change for production).

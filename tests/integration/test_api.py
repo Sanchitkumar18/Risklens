@@ -153,3 +153,31 @@ def test_portfolio_not_found_404(loaded_client):
     r = loaded_client.get(f"{BASE}/portfolios/99999")
     assert r.status_code == 404
     assert r.json()["error"]["code"] == "PORTFOLIO_NOT_FOUND"
+
+
+@pytest.mark.integration
+def test_position_update_and_delete(loaded_client):
+    pid = _make_portfolio(loaded_client)
+    pos = loaded_client.get(f"{BASE}/portfolios/{pid}").json()["positions"][0]
+
+    upd = loaded_client.patch(
+        f"{BASE}/portfolios/{pid}/positions/{pos['id']}", json={"quantity": "200"}
+    )
+    assert upd.status_code == 200
+    from decimal import Decimal
+    assert Decimal(upd.json()["quantity"]) == Decimal("200")
+
+    dele = loaded_client.delete(f"{BASE}/portfolios/{pid}/positions/{pos['id']}")
+    assert dele.status_code == 204
+
+    # Deleting again → 404 with the position-not-found code.
+    again = loaded_client.delete(f"{BASE}/portfolios/{pid}/positions/{pos['id']}")
+    assert again.status_code == 404
+    assert again.json()["error"]["code"] == "POSITION_NOT_FOUND"
+
+
+@pytest.mark.integration
+def test_delete_portfolio(loaded_client):
+    pid = _make_portfolio(loaded_client)
+    assert loaded_client.delete(f"{BASE}/portfolios/{pid}").status_code == 204
+    assert loaded_client.get(f"{BASE}/portfolios/{pid}").status_code == 404
