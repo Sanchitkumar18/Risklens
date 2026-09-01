@@ -29,6 +29,7 @@ from app.risk import var as var_mod
 from app.risk import volatility as vol_mod
 from app.schemas.risk import (
     CorrelationPair,
+    CorrelationResponse,
     DrawdownResultSchema,
     RiskContributionSchema,
     RiskReport,
@@ -180,6 +181,33 @@ class RiskService:
                     component=c.component, percent=c.percent,
                 )
                 for c in contrib.contributions
+            ],
+        )
+
+    def compute_correlation(self, portfolio_id: int) -> CorrelationResponse:
+        """Compute just the correlation matrix + high-correlation pairs (lightweight)."""
+        valuation = self.portfolios.value_portfolio(portfolio_id)
+        if not valuation.holdings:
+            raise InsufficientHistoricalData(
+                "Portfolio has no positions.", details={"portfolio_id": portfolio_id}
+            )
+        tickers = [h.ticker for h in valuation.holdings]
+        bars = self.market_data.get_for_tickers(tickers)
+        prices = to_price_matrix(_bars_to_frame(bars))
+        asset_ret = ret_mod.asset_returns(prices[tickers])
+        if len(asset_ret) < 2:
+            raise InsufficientHistoricalData(
+                "Not enough observations for correlation.",
+                details={"observations": len(asset_ret)},
+            )
+        corr = corr_mod.correlation_matrix(asset_ret)
+        pairs = corr_mod.high_correlation_pairs(corr, threshold=0.8)
+        return CorrelationResponse(
+            portfolio_id=portfolio_id,
+            tickers=list(corr.columns),
+            matrix={a: {b: float(corr.loc[a, b]) for b in corr.columns} for a in corr.index},
+            high_correlation_pairs=[
+                CorrelationPair(ticker_a=a, ticker_b=b, correlation=rho) for a, b, rho in pairs
             ],
         )
 

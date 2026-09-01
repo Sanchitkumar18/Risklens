@@ -39,7 +39,23 @@ Implemented incrementally.
 * **Phase 6:** risk engine — Historical & Parametric VaR, volatility, max drawdown, correlation, exposure, and Euler risk contribution, as pure tested functions; `RiskService` computes and persists a full `RiskReport`. See [`docs/risk-methodology.md`](docs/risk-methodology.md).
 * **Phase 7:** scenario stress testing — market crash, severe crash, tech selloff, volatility shock, and custom per-ticker/per-class shocks, with per-asset P&L attribution and worst-affected assets. Extensible via a declarative `ScenarioSpec`.
 * **Phase 8:** anomaly detection — scikit-learn Isolation Forest over engineered features (return, rolling vol, volume change, distance-from-MA), per ticker, with configurable contamination; anomalies are typed (price move / volatility / volume / trend) and persisted.
-* **Phase 9 (current):** alert engine — configurable thresholds on VaR, volatility, drawdown, single-name concentration, anomaly score, and stress loss; severity graded by breach ratio (LOW/MEDIUM/HIGH/CRITICAL), de-duplicated per breach per day, persisted, and acknowledgeable.
+* **Phase 9:** alert engine — configurable thresholds on VaR, volatility, drawdown, single-name concentration, anomaly score, and stress loss; severity graded by breach ratio (LOW/MEDIUM/HIGH/CRITICAL), de-duplicated per breach per day, persisted, and acknowledgeable.
+* **Phase 10 (current):** FastAPI REST API — 22 endpoints across market data, portfolios, risk, correlation, stress, anomalies, and alerts, with Pydantic validation, a uniform error envelope, and OpenAPI docs at `/docs`.
+
+### API
+
+```bash
+make run              # http://localhost:8000/docs  (interactive Swagger UI)
+curl http://localhost:8000/api/v1/health
+```
+
+Endpoints (prefix `/api/v1`): `POST /market-data/upload`, `GET /market-data/{ticker}`,
+`POST|GET /portfolios`, `GET|DELETE /portfolios/{id}`, `GET /portfolios/{id}/valuation`,
+`POST|PATCH|DELETE /portfolios/{id}/positions[/{pid}]`, `GET /portfolios/{id}/risk`,
+`GET /portfolios/{id}/correlation`, `GET /portfolios/{id}/stress-test[/scenarios]`,
+`POST /portfolios/{id}/stress-test/custom`, `GET|POST /portfolios/{id}/anomalies[/scan]`,
+`GET|POST /portfolios/{id}/alerts[/scan]`, `POST /portfolios/{id}/alerts/{aid}/acknowledge`.
+Errors return `{"error": {"code", "message", "details"}}` with the right HTTP status.
 
 ### Data pipeline
 

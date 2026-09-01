@@ -2,9 +2,24 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class AnomalyRead(BaseModel):
+    """A persisted anomaly row."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    portfolio_id: int | None = None
+    ticker: str
+    date: date
+    anomaly_score: float
+    anomaly_type: str
+    features: dict | None = None
+    created_at: datetime | None = None
 
 
 class AnomalyRecord(BaseModel):

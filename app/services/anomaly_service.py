@@ -18,7 +18,7 @@ from app.core.logging import get_logger
 from app.db.repositories.anomaly_repo import AnomalyRepository
 from app.db.repositories.market_data_repo import MarketDataRepository
 from app.pipelines.transformation import enrich
-from app.schemas.anomaly import AnomalyRecord, AnomalyScanResult
+from app.schemas.anomaly import AnomalyRead, AnomalyRecord, AnomalyScanResult
 from app.services.portfolio_service import PortfolioService
 
 logger = get_logger("risklens.anomaly")
@@ -42,6 +42,12 @@ class AnomalyService:
         return self.scan_tickers(
             tickers, contamination=contamination, portfolio_id=portfolio_id, persist=persist
         )
+
+    def list_persisted(self, portfolio_id: int, limit: int | None = None) -> list[AnomalyRead]:
+        """Return stored anomalies for a portfolio (most recent first)."""
+        self.portfolios.get_portfolio(portfolio_id)  # 404 if missing
+        rows = self.anomalies.list_by_portfolio(portfolio_id, limit=limit)
+        return [AnomalyRead.model_validate(r) for r in rows]
 
     def scan_tickers(
         self,

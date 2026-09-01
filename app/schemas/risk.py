@@ -36,6 +36,15 @@ class RiskContributionSchema(BaseModel):
     percent: float = Field(..., description="Share of total portfolio volatility (0..1).")
 
 
+class CorrelationResponse(BaseModel):
+    """Asset return correlation matrix + highly correlated pairs."""
+
+    portfolio_id: int
+    tickers: list[str]
+    matrix: dict[str, dict[str, float]] = Field(default_factory=dict)
+    high_correlation_pairs: list[CorrelationPair] = Field(default_factory=list)
+
+
 class RiskReport(BaseModel):
     """Complete risk snapshot for a portfolio."""
 

@@ -19,7 +19,15 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app import __version__
-from app.api.routes import health
+from app.api.routes import (
+    alerts,
+    anomalies,
+    health,
+    market_data,
+    portfolios,
+    risk,
+    stress,
+)
 from app.core.config import get_settings
 from app.core.exceptions import RiskLensError
 from app.core.logging import configure_logging, get_logger
@@ -103,7 +111,8 @@ def create_app() -> FastAPI:
         )
 
     # ── Routers ─────────────────────────────────────────────
-    app.include_router(health.router, prefix=API_PREFIX)
+    for module in (health, market_data, portfolios, risk, stress, anomalies, alerts):
+        app.include_router(module.router, prefix=API_PREFIX)
 
     return app
 

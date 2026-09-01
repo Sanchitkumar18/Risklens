@@ -11,12 +11,15 @@ from __future__ import annotations
 import pandas as pd
 from sqlalchemy.orm import Session
 
+from datetime import date
+
+from app.core.exceptions import MarketDataNotFound
 from app.core.logging import get_logger
 from app.db.repositories.market_data_repo import MarketDataRepository
 from app.pipelines.cleaning import clean_market_data
 from app.pipelines.ingestion import dataframe_to_rows
 from app.pipelines.validation import validate_market_data
-from app.schemas.market_data import IngestionSummary
+from app.schemas.market_data import IngestionSummary, MarketDataBar, MarketDataSeries
 from app.schemas.validation import ValidationReport
 
 logger = get_logger("risklens.market_data")
@@ -86,3 +89,19 @@ class MarketDataService:
 
         df = load_csv(path)
         return self.ingest_dataframe(df, validate=validate, commit=commit)
+
+    def get_series(
+        self, ticker: str, start: date | None = None, end: date | None = None
+    ) -> MarketDataSeries:
+        """Return a ticker's bars over an optional date range."""
+        symbol = ticker.strip().upper()
+        bars = self.repo.get_by_ticker(symbol, start, end)
+        if not bars:
+            raise MarketDataNotFound(
+                f"No market data for {symbol}.", details={"ticker": symbol}
+            )
+        return MarketDataSeries(
+            ticker=symbol,
+            count=len(bars),
+            bars=[MarketDataBar.model_validate(b) for b in bars],
+        )
