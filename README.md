@@ -36,7 +36,8 @@ Implemented incrementally.
 * **Phase 3:** synthetic market-data generator (multi-factor + GARCH model) and the ingestion pipeline (CSV/DataFrame → normalized, typed rows → idempotent DB upsert).
 * **Phase 4:** validation → cleaning → transformation pipeline. Validation quarantines and reports bad rows (never silently dropped); cleaning deduplicates/sorts; transformation derives returns and rolling features for analytics.
 * **Phase 5:** portfolio management — portfolio/position CRUD and mark-to-market valuation (holdings, weights, gross/net exposure, unrealized P&L) computed from stored positions × stored prices.
-* **Phase 6 (current):** risk engine — Historical & Parametric VaR, volatility, max drawdown, correlation, exposure, and Euler risk contribution, as pure tested functions; `RiskService` computes and persists a full `RiskReport`. See [`docs/risk-methodology.md`](docs/risk-methodology.md).
+* **Phase 6:** risk engine — Historical & Parametric VaR, volatility, max drawdown, correlation, exposure, and Euler risk contribution, as pure tested functions; `RiskService` computes and persists a full `RiskReport`. See [`docs/risk-methodology.md`](docs/risk-methodology.md).
+* **Phase 7 (current):** scenario stress testing — market crash, severe crash, tech selloff, volatility shock, and custom per-ticker/per-class shocks, with per-asset P&L attribution and worst-affected assets. Extensible via a declarative `ScenarioSpec`.
 
 ### Data pipeline
 
