@@ -38,7 +38,8 @@ Implemented incrementally.
 * **Phase 5:** portfolio management — portfolio/position CRUD and mark-to-market valuation (holdings, weights, gross/net exposure, unrealized P&L) computed from stored positions × stored prices.
 * **Phase 6:** risk engine — Historical & Parametric VaR, volatility, max drawdown, correlation, exposure, and Euler risk contribution, as pure tested functions; `RiskService` computes and persists a full `RiskReport`. See [`docs/risk-methodology.md`](docs/risk-methodology.md).
 * **Phase 7:** scenario stress testing — market crash, severe crash, tech selloff, volatility shock, and custom per-ticker/per-class shocks, with per-asset P&L attribution and worst-affected assets. Extensible via a declarative `ScenarioSpec`.
-* **Phase 8 (current):** anomaly detection — scikit-learn Isolation Forest over engineered features (return, rolling vol, volume change, distance-from-MA), per ticker, with configurable contamination; anomalies are typed (price move / volatility / volume / trend) and persisted.
+* **Phase 8:** anomaly detection — scikit-learn Isolation Forest over engineered features (return, rolling vol, volume change, distance-from-MA), per ticker, with configurable contamination; anomalies are typed (price move / volatility / volume / trend) and persisted.
+* **Phase 9 (current):** alert engine — configurable thresholds on VaR, volatility, drawdown, single-name concentration, anomaly score, and stress loss; severity graded by breach ratio (LOW/MEDIUM/HIGH/CRITICAL), de-duplicated per breach per day, persisted, and acknowledgeable.
 
 ### Data pipeline
 
