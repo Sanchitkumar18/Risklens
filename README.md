@@ -33,7 +33,22 @@ Implemented incrementally.
 
 * **Phase 1:** project scaffold, configuration, logging, exception hierarchy, health API, Docker skeleton, first tests.
 * **Phase 2:** PostgreSQL schema — SQLAlchemy 2.0 models (7 tables), engine/session management, repository layer, Alembic migrations, DB-backed readiness probe, integration tests.
-* **Phase 3 (current):** synthetic market-data generator (multi-factor + GARCH model) and the ingestion pipeline (CSV/DataFrame → normalized, typed rows → idempotent DB upsert).
+* **Phase 3:** synthetic market-data generator (multi-factor + GARCH model) and the ingestion pipeline (CSV/DataFrame → normalized, typed rows → idempotent DB upsert).
+* **Phase 4 (current):** validation → cleaning → transformation pipeline. Validation quarantines and reports bad rows (never silently dropped); cleaning deduplicates/sorts; transformation derives returns and rolling features for analytics.
+
+### Data pipeline
+
+```
+raw → normalize → VALIDATE (accept/reject + report) → CLEAN (dedup/sort) → upsert → PostgreSQL
+                                                                                  ↓
+                                          TRANSFORM (returns, rolling vol, MAs) → analytics
+```
+
+Validation categorizes issues as **ERROR** (row rejected: null/negative price,
+`high < low`, OHLC inconsistency, bad volume, invalid ticker, unparseable/future date)
+or **WARNING** (row kept, flagged: abnormal price jump, out-of-bounds price, duplicate
+row, missing business day). Every ingestion returns a `ValidationReport` with rows
+processed/accepted/rejected and counts by category.
 
 ### Sample data
 

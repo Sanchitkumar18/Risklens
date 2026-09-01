@@ -7,13 +7,19 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.validation import ValidationReport
+
 
 class IngestionSummary(BaseModel):
     """Outcome of an ingestion run (returned by upload/seed operations)."""
 
     rows_read: int = Field(..., description="Rows parsed from the source.")
     rows_written: int = Field(..., description="Rows inserted or updated in the database.")
+    rows_rejected: int = Field(default=0, description="Rows dropped by validation.")
     tickers: list[str] = Field(default_factory=list, description="Distinct tickers ingested.")
+    validation: ValidationReport | None = Field(
+        default=None, description="Validation report, if validation ran."
+    )
     message: str = Field(default="", description="Human-readable summary.")
 
 

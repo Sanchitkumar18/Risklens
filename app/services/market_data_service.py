@@ -13,8 +13,11 @@ from sqlalchemy.orm import Session
 
 from app.core.logging import get_logger
 from app.db.repositories.market_data_repo import MarketDataRepository
+from app.pipelines.cleaning import clean_market_data
 from app.pipelines.ingestion import dataframe_to_rows
+from app.pipelines.validation import validate_market_data
 from app.schemas.market_data import IngestionSummary
+from app.schemas.validation import ValidationReport
 
 logger = get_logger("risklens.market_data")
 
@@ -26,35 +29,60 @@ class MarketDataService:
         self.session = session
         self.repo = MarketDataRepository(session)
 
-    def ingest_dataframe(self, df: pd.DataFrame, *, commit: bool = True) -> IngestionSummary:
-        """Parse, upsert, and (optionally) commit a market-data frame.
+    def ingest_dataframe(
+        self, df: pd.DataFrame, *, validate: bool = True, commit: bool = True
+    ) -> IngestionSummary:
+        """Run the pipeline (parse → validate → clean → upsert) for a frame.
 
-        Returns an :class:`IngestionSummary`. Ingestion is idempotent — re-importing
-        the same rows updates in place rather than duplicating (see the repository's
-        ``bulk_upsert``).
+        With ``validate=True`` (default), rows failing hard checks are quarantined and
+        reported rather than written; the remaining rows are deduplicated/sorted before
+        upsert. Ingestion is idempotent — re-importing updates rows in place.
         """
-        rows = dataframe_to_rows(df)
-        rows_read = len(rows)
+        rows_read = len(df)
+        report: ValidationReport | None = None
 
+        if validate:
+            result = validate_market_data(df)
+            report = result.report
+            frame = result.accepted
+            if not frame.empty:
+                frame, _ = clean_market_data(frame)
+        else:
+            frame = df
+
+        rows = dataframe_to_rows(frame) if len(frame) else []
         written = self.repo.bulk_upsert(rows)
         if commit:
             self.session.commit()
 
         tickers = sorted({row["ticker"] for row in rows})
+        rejected = report.rows_rejected if report else 0
         logger.info(
             "market data ingested",
-            extra={"rows_read": rows_read, "rows_written": written, "tickers": tickers},
+            extra={
+                "rows_read": rows_read,
+                "rows_written": written,
+                "rows_rejected": rejected,
+                "tickers": tickers,
+            },
         )
         return IngestionSummary(
             rows_read=rows_read,
             rows_written=written,
+            rows_rejected=rejected,
             tickers=tickers,
-            message=f"Ingested {written} row(s) across {len(tickers)} ticker(s).",
+            validation=report,
+            message=(
+                f"Ingested {written} row(s) across {len(tickers)} ticker(s); "
+                f"{rejected} row(s) rejected."
+            ),
         )
 
-    def ingest_csv(self, path: str, *, commit: bool = True) -> IngestionSummary:
-        """Load a CSV file and ingest it."""
+    def ingest_csv(
+        self, path: str, *, validate: bool = True, commit: bool = True
+    ) -> IngestionSummary:
+        """Load a CSV file and ingest it through the pipeline."""
         from app.pipelines.ingestion import load_csv
 
         df = load_csv(path)
-        return self.ingest_dataframe(df, commit=commit)
+        return self.ingest_dataframe(df, validate=validate, commit=commit)

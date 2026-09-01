@@ -117,14 +117,25 @@ def _build_shocks(
     n_series = 2 + n_assets
     z = rng.standard_normal((n_days, n_series))
 
-    # Market crash days: large negative common shock (buffer away from the edges).
+    # Candidate days for tail events, buffered from the edges. The buffer adapts to
+    # short series so small date ranges still work; long ranges keep the original
+    # 30/5 buffer (so the default dataset is unchanged).
+    lo = 30 if n_days > 60 else max(1, n_days // 10)
+    hi = n_days - (5 if n_days > 60 else 1)
+    population = np.arange(lo, hi)
+    if population.size == 0:
+        return z
+
+    # Market crash days: large negative common shock.
+    n_crashes = min(n_crashes, population.size)
     if n_crashes > 0:
-        crash_days = rng.choice(np.arange(30, n_days - 5), size=n_crashes, replace=False)
+        crash_days = rng.choice(population, size=n_crashes, replace=False)
         z[crash_days, 0] = rng.uniform(-6.0, -3.5, size=n_crashes)
 
     # Idiosyncratic single-name jumps (both signs) → labelled anomalies to detect.
+    n_idio_jumps = min(n_idio_jumps, population.size)
     if n_idio_jumps > 0:
-        jump_days = rng.choice(np.arange(30, n_days - 5), size=n_idio_jumps, replace=False)
+        jump_days = rng.choice(population, size=n_idio_jumps, replace=False)
         jump_assets = rng.integers(0, n_assets, size=n_idio_jumps)
         signs = rng.choice([-1.0, 1.0], size=n_idio_jumps)
         z[jump_days, 2 + jump_assets] = signs * rng.uniform(4.5, 7.5, size=n_idio_jumps)
