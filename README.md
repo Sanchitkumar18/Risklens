@@ -32,7 +32,21 @@ This README is expanded across build phases. See the design in
 Implemented incrementally.
 
 * **Phase 1:** project scaffold, configuration, logging, exception hierarchy, health API, Docker skeleton, first tests.
-* **Phase 2 (current):** PostgreSQL schema — SQLAlchemy 2.0 models (7 tables), engine/session management, repository layer, Alembic migrations, DB-backed readiness probe, integration tests.
+* **Phase 2:** PostgreSQL schema — SQLAlchemy 2.0 models (7 tables), engine/session management, repository layer, Alembic migrations, DB-backed readiness probe, integration tests.
+* **Phase 3 (current):** synthetic market-data generator (multi-factor + GARCH model) and the ingestion pipeline (CSV/DataFrame → normalized, typed rows → idempotent DB upsert).
+
+### Sample data
+
+```bash
+make sample-data      # writes data/sample/market_data_sample.csv (reproducible, seed=42)
+make load-data        # loads it into the database (run make migrate first)
+```
+
+The generator produces ~11k daily bars across 7 assets (SPY + 6 tech names) with
+realistic **trends, volatility clustering, cross-asset correlation, tail-event crashes,
+and single-name anomalies**. It is **synthetic/demo data only** — not real market data.
+The ingestion layer also accepts real vendor CSVs (common column aliases like
+`Adj Close` are normalized automatically).
 
 ### Database migrations
 

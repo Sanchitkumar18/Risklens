@@ -28,10 +28,11 @@ htmlcov/
 .mypy_cache/
 .DS_Store
 
-# ── Data artifacts (generated) ──────────────────────────────
+# ── Data artifacts (generated / reproducible from seed) ─────
 data/raw/*.csv
 data/processed/*.csv
 data/processed/*.parquet
+data/sample/*.csv
 !data/**/.gitkeep
 
 # ── IDE ─────────────────────────────────────────────────────

@@ -6,7 +6,7 @@ BIN := $(VENV)/bin
 
 .DEFAULT_GOAL := help
 .PHONY: help venv install test test-unit test-integration lint run \
-        migrate migrate-down revision compose-up compose-down clean
+        migrate migrate-down revision sample-data load-data compose-up compose-down clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -36,6 +36,12 @@ migrate-down: ## Roll back the latest migration
 
 revision: ## Autogenerate a migration: make revision M="message"
 	$(BIN)/alembic revision --autogenerate -m "$(M)"
+
+sample-data: ## Generate the synthetic sample CSV (data/sample/)
+	$(BIN)/python -m scripts.generate_sample_data
+
+load-data: ## Load the sample CSV into the database (needs DATABASE_URL + migrate)
+	$(BIN)/python -m scripts.load_sample_data
 
 lint: ## Lint with ruff (if installed)
 	$(BIN)/python -m ruff check app tests || echo "ruff not installed; skipping"
