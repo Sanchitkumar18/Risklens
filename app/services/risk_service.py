@@ -33,6 +33,7 @@ from app.schemas.risk import (
     DrawdownResultSchema,
     RiskContributionSchema,
     RiskReport,
+    RiskTimeSeriesPoint,
     VarResult,
 )
 from app.services.portfolio_service import PortfolioService
@@ -210,6 +211,40 @@ class RiskService:
                 CorrelationPair(ticker_a=a, ticker_b=b, correlation=rho) for a, b, rho in pairs
             ],
         )
+
+    def compute_timeseries(
+        self, portfolio_id: int, vol_window: int = 21
+    ) -> list[RiskTimeSeriesPoint]:
+        """Return the portfolio value, drawdown, and rolling-vol series (for charts)."""
+        valuation = self.portfolios.value_portfolio(portfolio_id)
+        if not valuation.holdings:
+            raise InsufficientHistoricalData(
+                "Portfolio has no positions.", details={"portfolio_id": portfolio_id}
+            )
+        quantities = {h.ticker: float(h.quantity) for h in valuation.holdings}
+        bars = self.market_data.get_for_tickers(list(quantities))
+        prices = to_price_matrix(_bars_to_frame(bars))
+        values = ret_mod.build_portfolio_values(prices, quantities)
+
+        returns = values.pct_change(fill_method=None)
+        drawdown = values / values.cummax() - 1.0
+        rolling = returns.rolling(vol_window, min_periods=max(2, vol_window // 2)).std()
+
+        import pandas as pd
+
+        points: list[RiskTimeSeriesPoint] = []
+        for idx, value in values.items():
+            dd = float(drawdown.loc[idx])
+            rv = rolling.loc[idx]
+            points.append(
+                RiskTimeSeriesPoint(
+                    date=_as_date(idx),
+                    portfolio_value=float(value),
+                    drawdown=dd,
+                    rolling_vol=None if pd.isna(rv) else float(rv),
+                )
+            )
+        return points
 
     def _persist(
         self,

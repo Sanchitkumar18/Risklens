@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Query
 
 from app.api.dependencies import get_risk_service
-from app.schemas.risk import CorrelationResponse, RiskReport
+from app.schemas.risk import CorrelationResponse, RiskReport, RiskTimeSeriesPoint
 from app.services.risk_service import RiskService
 
 router = APIRouter(prefix="/portfolios", tags=["risk"])
@@ -33,3 +33,13 @@ def get_correlation(
 ) -> CorrelationResponse:
     """Return the asset return correlation matrix and highly correlated pairs."""
     return service.compute_correlation(portfolio_id)
+
+
+@router.get("/{portfolio_id}/risk/timeseries", response_model=list[RiskTimeSeriesPoint])
+def get_risk_timeseries(
+    portfolio_id: int,
+    vol_window: int = Query(default=21, ge=2, le=252),
+    service: RiskService = Depends(get_risk_service),
+) -> list[RiskTimeSeriesPoint]:
+    """Return portfolio value, drawdown, and rolling volatility over time (for charts)."""
+    return service.compute_timeseries(portfolio_id, vol_window=vol_window)

@@ -101,6 +101,15 @@ def test_risk_and_correlation(loaded_client):
 
 
 @pytest.mark.integration
+def test_risk_timeseries(loaded_client):
+    pid = _make_portfolio(loaded_client)
+    series = loaded_client.get(f"{BASE}/portfolios/{pid}/risk/timeseries").json()
+    assert len(series) > 100
+    assert {"date", "portfolio_value", "drawdown"} <= set(series[0])
+    assert all(p["drawdown"] <= 1e-9 for p in series)  # drawdown is never positive
+
+
+@pytest.mark.integration
 def test_stress_endpoints(loaded_client):
     pid = _make_portfolio(loaded_client)
     scenarios = loaded_client.get(f"{BASE}/portfolios/{pid}/stress-test/scenarios").json()

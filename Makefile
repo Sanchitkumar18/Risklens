@@ -49,6 +49,9 @@ lint: ## Lint with ruff (if installed)
 run: ## Run the API locally with autoreload
 	$(BIN)/uvicorn app.main:app --reload
 
+dashboard: ## Run the Streamlit dashboard (API must be running)
+	$(BIN)/streamlit run dashboard/app.py
+
 compose-up: ## Start postgres + api via docker compose
 	docker compose up --build
 

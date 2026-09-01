@@ -36,6 +36,15 @@ class RiskContributionSchema(BaseModel):
     percent: float = Field(..., description="Share of total portfolio volatility (0..1).")
 
 
+class RiskTimeSeriesPoint(BaseModel):
+    """One day of the portfolio's value / drawdown / rolling-vol series."""
+
+    date: date
+    portfolio_value: float
+    drawdown: float
+    rolling_vol: float | None = None
+
+
 class CorrelationResponse(BaseModel):
     """Asset return correlation matrix + highly correlated pairs."""
 

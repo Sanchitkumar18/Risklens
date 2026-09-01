@@ -40,7 +40,18 @@ Implemented incrementally.
 * **Phase 7:** scenario stress testing — market crash, severe crash, tech selloff, volatility shock, and custom per-ticker/per-class shocks, with per-asset P&L attribution and worst-affected assets. Extensible via a declarative `ScenarioSpec`.
 * **Phase 8:** anomaly detection — scikit-learn Isolation Forest over engineered features (return, rolling vol, volume change, distance-from-MA), per ticker, with configurable contamination; anomalies are typed (price move / volatility / volume / trend) and persisted.
 * **Phase 9:** alert engine — configurable thresholds on VaR, volatility, drawdown, single-name concentration, anomaly score, and stress loss; severity graded by breach ratio (LOW/MEDIUM/HIGH/CRITICAL), de-duplicated per breach per day, persisted, and acknowledgeable.
-* **Phase 10 (current):** FastAPI REST API — 22 endpoints across market data, portfolios, risk, correlation, stress, anomalies, and alerts, with Pydantic validation, a uniform error envelope, and OpenAPI docs at `/docs`.
+* **Phase 10:** FastAPI REST API — 23 endpoints across market data, portfolios, risk, correlation, stress, anomalies, and alerts, with Pydantic validation, a uniform error envelope, and OpenAPI docs at `/docs`.
+* **Phase 11 (current):** Streamlit dashboard — Overview, Portfolio, Risk Analytics, Stress Testing, Anomalies, Alerts, and an AI Assistant chat shell, with Plotly visualizations, talking to the API over HTTP.
+
+### Dashboard
+
+```bash
+make run          # terminal 1: API on :8000
+make dashboard    # terminal 2: dashboard on :8501
+```
+
+Then in the sidebar: connect, click **Create demo 'Tech Growth' portfolio** (after
+`make load-data`), and explore. Set `RISKLENS_API_URL` to point at a non-local API.
 
 ### API
 
