@@ -29,8 +29,22 @@ This README is expanded across build phases. See the design in
 
 ## Build phases
 
-Implemented incrementally. **Phase 1 (current): project scaffold, configuration,
-logging, exception hierarchy, health API, Docker skeleton, first tests.**
+Implemented incrementally.
+
+* **Phase 1:** project scaffold, configuration, logging, exception hierarchy, health API, Docker skeleton, first tests.
+* **Phase 2 (current):** PostgreSQL schema — SQLAlchemy 2.0 models (7 tables), engine/session management, repository layer, Alembic migrations, DB-backed readiness probe, integration tests.
+
+### Database migrations
+
+```bash
+# Point DATABASE_URL at your Postgres (see .env), then:
+make migrate          # alembic upgrade head
+make migrate-down     # roll back one revision
+make revision M="add something"   # autogenerate a new migration
+```
+
+The schema also runs on SQLite, which is what the in-memory integration test suite
+uses — so `make test` needs no database server.
 
 ---
 

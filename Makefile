@@ -5,7 +5,8 @@ VENV := .venv
 BIN := $(VENV)/bin
 
 .DEFAULT_GOAL := help
-.PHONY: help venv install test test-unit lint run compose-up compose-down clean
+.PHONY: help venv install test test-unit test-integration lint run \
+        migrate migrate-down revision compose-up compose-down clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -23,6 +24,18 @@ test: ## Run the full test suite
 
 test-unit: ## Run only fast unit tests
 	$(BIN)/pytest -m unit
+
+test-integration: ## Run only database integration tests
+	$(BIN)/pytest -m integration
+
+migrate: ## Apply all migrations (alembic upgrade head)
+	$(BIN)/alembic upgrade head
+
+migrate-down: ## Roll back the latest migration
+	$(BIN)/alembic downgrade -1
+
+revision: ## Autogenerate a migration: make revision M="message"
+	$(BIN)/alembic revision --autogenerate -m "$(M)"
 
 lint: ## Lint with ruff (if installed)
 	$(BIN)/python -m ruff check app tests || echo "ruff not installed; skipping"

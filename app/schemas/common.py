@@ -30,3 +30,10 @@ class HealthResponse(BaseModel):
     app: str = Field(..., description="Application name.")
     environment: str = Field(..., description="Deployment environment.")
     version: str = Field(..., description="Application version.")
+
+
+class ReadinessResponse(BaseModel):
+    """Response body for ``GET /api/v1/health/ready``."""
+
+    status: str = Field(..., description="'ready' when dependencies are reachable.")
+    database: str = Field(..., description="'ok' when the database responds.")
