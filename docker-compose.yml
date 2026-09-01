@@ -1,0 +1,40 @@
+# ── RiskLens local orchestration ────────────────────────────
+# Services: postgres (data store) + api (FastAPI). The dashboard service is added
+# in the dashboard phase. Bring up with:  docker compose up --build
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: risklens-postgres
+    environment:
+      POSTGRES_USER: risklens
+      POSTGRES_PASSWORD: risklens
+      POSTGRES_DB: risklens
+    ports:
+      - "5432:5432"
+    volumes:
+      - risklens_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U risklens -d risklens"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: risklens-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Inside the compose network the DB host is the `postgres` service name.
+      DATABASE_URL: postgresql+psycopg2://risklens:risklens@postgres:5432/risklens
+      APP_ENV: development
+      LOG_LEVEL: INFO
+      LLM_PROVIDER: mock
+    ports:
+      - "8000:8000"
+
+volumes:
+  risklens_pgdata:

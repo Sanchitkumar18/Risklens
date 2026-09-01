@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "risklens"
+version = "0.1.0"
+description = "RiskLens – Market Risk Analytics & GenAI Assistant"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "RiskLens" }]
+
+[tool.setuptools]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = "-ra -q"
+markers = [
+    "unit: fast, isolated tests with no external dependencies",
+    "integration: tests that require a database or other services",
+]
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["app/*/__init__.py", "alembic/*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]

@@ -1,0 +1,39 @@
+# ── Python ──────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.Python
+
+# ── Virtual environments ────────────────────────────────────
+.venv/
+venv/
+env/
+
+# ── Secrets / config ────────────────────────────────────────
+.env
+*.env
+!.env.example
+
+# ── Tests / coverage ────────────────────────────────────────
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# ── Tooling ─────────────────────────────────────────────────
+.ruff_cache/
+.mypy_cache/
+.DS_Store
+
+# ── Data artifacts (generated) ──────────────────────────────
+data/raw/*.csv
+data/processed/*.csv
+data/processed/*.parquet
+!data/**/.gitkeep
+
+# ── IDE ─────────────────────────────────────────────────────
+.idea/
+.vscode/
