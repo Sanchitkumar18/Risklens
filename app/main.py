@@ -22,6 +22,7 @@ from app import __version__
 from app.api.routes import (
     alerts,
     anomalies,
+    assistant,
     health,
     market_data,
     portfolios,
@@ -111,7 +112,7 @@ def create_app() -> FastAPI:
         )
 
     # ── Routers ─────────────────────────────────────────────
-    for module in (health, market_data, portfolios, risk, stress, anomalies, alerts):
+    for module in (health, market_data, portfolios, risk, stress, anomalies, alerts, assistant):
         app.include_router(module.router, prefix=API_PREFIX)
 
     return app

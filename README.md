@@ -42,7 +42,8 @@ Implemented incrementally.
 * **Phase 9:** alert engine — configurable thresholds on VaR, volatility, drawdown, single-name concentration, anomaly score, and stress loss; severity graded by breach ratio (LOW/MEDIUM/HIGH/CRITICAL), de-duplicated per breach per day, persisted, and acknowledgeable.
 * **Phase 10:** FastAPI REST API — 23 endpoints across market data, portfolios, risk, correlation, stress, anomalies, and alerts, with Pydantic validation, a uniform error envelope, and OpenAPI docs at `/docs`.
 * **Phase 11:** Streamlit dashboard — Overview, Portfolio, Risk Analytics, Stress Testing, Anomalies, Alerts, and an AI Assistant chat shell, with Plotly visualizations, talking to the API over HTTP.
-* **Phase 12 (current):** LangChain tools — nine grounded tools (`get_portfolio_summary`, `get_risk_metrics`, `get_risk_contributions`, `run_stress_test`, `get_correlation_matrix`, `get_drawdown_analysis`, `get_asset_exposure`, `get_anomalies`, `get_alerts`) wrapping the services, plus an LLM provider abstraction that runs a deterministic mock with no API key. The LLM can only report numbers a tool returns.
+* **Phase 12:** LangChain tools — nine grounded tools (`get_portfolio_summary`, `get_risk_metrics`, `get_risk_contributions`, `run_stress_test`, `get_correlation_matrix`, `get_drawdown_analysis`, `get_asset_exposure`, `get_anomalies`, `get_alerts`) wrapping the services, plus an LLM provider abstraction that runs a deterministic mock with no API key. The LLM can only report numbers a tool returns.
+* **Phase 13 (current):** LangGraph assistant — a typed-state graph (classify → plan → retrieve → explain → validate) that answers grounded questions via `POST /assistant/query` and the dashboard chat. Works offline (deterministic renderer) or with a real LLM; a validation node flags any ungrounded figure.
 
 ### Dashboard
 
