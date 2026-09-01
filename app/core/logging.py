@@ -86,8 +86,23 @@ def configure_logging(level: str = "INFO", json_format: bool = False) -> None:
     _CONFIGURED = True
 
 
-def get_logger(name: str) -> logging.Logger:
-    """Return a namespaced logger, configuring logging with defaults if needed."""
+class _SafeLoggerAdapter(logging.LoggerAdapter):
+    """Logger adapter that renames ``extra`` keys colliding with reserved LogRecord
+    attributes (e.g. ``name``, ``module``), which would otherwise raise ``KeyError``
+    inside the stdlib. Colliding keys are prefixed with ``ctx_``.
+    """
+
+    def process(self, msg: str, kwargs: dict) -> tuple[str, dict]:
+        extra = kwargs.get("extra")
+        if extra:
+            kwargs["extra"] = {
+                (f"ctx_{k}" if k in _RESERVED_ATTRS else k): v for k, v in extra.items()
+            }
+        return msg, kwargs
+
+
+def get_logger(name: str) -> _SafeLoggerAdapter:
+    """Return a namespaced, collision-safe logger, configuring defaults if needed."""
     if not _CONFIGURED:
         configure_logging()
-    return logging.getLogger(name)
+    return _SafeLoggerAdapter(logging.getLogger(name), {})

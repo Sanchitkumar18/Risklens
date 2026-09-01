@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date as date_type
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import and_, func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
@@ -71,6 +71,36 @@ class MarketDataRepository(BaseRepository[MarketData]):
             stmt = stmt.where(MarketData.date <= end)
         stmt = stmt.order_by(MarketData.ticker, MarketData.date)
         return list(self.session.execute(stmt).scalars().all())
+
+    def latest_bars(
+        self, tickers: list[str], as_of: date_type | None = None
+    ) -> dict[str, MarketData]:
+        """Return the most recent bar per ticker (on/before ``as_of`` if given).
+
+        One query for all tickers (no per-ticker N+1): a grouped subquery finds each
+        ticker's max date, then joins back to the full row. Portable across Postgres
+        and SQLite.
+        """
+        if not tickers:
+            return {}
+
+        max_date = select(
+            MarketData.ticker.label("ticker"),
+            func.max(MarketData.date).label("max_date"),
+        ).where(MarketData.ticker.in_(tickers))
+        if as_of is not None:
+            max_date = max_date.where(MarketData.date <= as_of)
+        max_date = max_date.group_by(MarketData.ticker).subquery()
+
+        stmt = select(MarketData).join(
+            max_date,
+            and_(
+                MarketData.ticker == max_date.c.ticker,
+                MarketData.date == max_date.c.max_date,
+            ),
+        )
+        rows = self.session.execute(stmt).scalars().all()
+        return {row.ticker: row for row in rows}
 
     def distinct_tickers(self) -> list[str]:
         """Return the sorted set of tickers present in the table."""

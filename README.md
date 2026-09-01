@@ -34,7 +34,8 @@ Implemented incrementally.
 * **Phase 1:** project scaffold, configuration, logging, exception hierarchy, health API, Docker skeleton, first tests.
 * **Phase 2:** PostgreSQL schema — SQLAlchemy 2.0 models (7 tables), engine/session management, repository layer, Alembic migrations, DB-backed readiness probe, integration tests.
 * **Phase 3:** synthetic market-data generator (multi-factor + GARCH model) and the ingestion pipeline (CSV/DataFrame → normalized, typed rows → idempotent DB upsert).
-* **Phase 4 (current):** validation → cleaning → transformation pipeline. Validation quarantines and reports bad rows (never silently dropped); cleaning deduplicates/sorts; transformation derives returns and rolling features for analytics.
+* **Phase 4:** validation → cleaning → transformation pipeline. Validation quarantines and reports bad rows (never silently dropped); cleaning deduplicates/sorts; transformation derives returns and rolling features for analytics.
+* **Phase 5 (current):** portfolio management — portfolio/position CRUD and mark-to-market valuation (holdings, weights, gross/net exposure, unrealized P&L) computed from stored positions × stored prices.
 
 ### Data pipeline
 
